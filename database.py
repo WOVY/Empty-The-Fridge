@@ -37,6 +37,22 @@ def register_user(user_id, password, nickname):
         print(f"회원가입 실패: {e}")
         conn.rollback()
         return False
+
+def login_user(user_id, password):
+    conn = get_db_conn()
+    if not conn: return None
+    
+    cursor = conn.cursor()
+    try:
+        sql = "SELECT nickname FROM USER_T WHERE user_id = :1 AND password = :2"
+        cursor.execute(sql, (user_id, password))
+        result = cursor.fetchone()
+        if result:
+            return {'user_id': user_id, 'nickname': result[0]}
+        return None
+    except oracledb.Error as e:
+        print(f"로그인 오류: {e}")
+        return None
     finally:
         if cursor: cursor.close()
         if conn: conn.close()

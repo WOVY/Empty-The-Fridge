@@ -7,7 +7,23 @@ app.config.from_object(config)
 
 @app.route('/')
 def index():
+    if 'user_id' in session:
         return render_template('index.html')
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        user_id = request.form.get('user_id')
+        password = request.form.get('password')
+        user = db.login_user(user_id, password)
+        if user:
+            session['user_id'] = user['user_id']
+            session['nickname'] = user['nickname']
+            return redirect(url_for('index'))
+        else:
+            flash('아이디 또는 비밀번호가 일치하지 않습니다.', 'error')
+    return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
