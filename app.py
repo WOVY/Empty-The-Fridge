@@ -71,6 +71,14 @@ def fridge():
 
     return render_template('fridge.html', ingredients=ingredients)
 
+# 냉장고 재료 삭제
+@app.route('/fridge/delete/<int:id>')
+def delete_ingredient(id):
+    if 'user_id' not in session: return redirect(url_for('login'))
+    db.delete_ingredient(session['user_id'], id)
+    flash('재료가 삭제되었습니다.', 'success')
+    return redirect(url_for('fridge'))
+
 if __name__ == '__main__':
     app.run(debug=True)
     
