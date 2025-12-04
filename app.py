@@ -138,6 +138,68 @@ def delete_account():
         flash('회원 탈퇴에 실패했습니다.', 'error')
         return redirect(url_for('mypage'))
 
+@app.route('/search')
+def search():
+    if 'user_id' not in session: return redirect(url_for('login'))
+    
+    mode = request.args.get('mode')
+    recipes = []
+    title = "전체 레시피"
+    
+    if mode == 'fridge':
+        recipes = db.find_recipes_by_fridge(session['user_id'])
+        title = "냉장고 파먹기 결과"
+    else:
+        # 검색 파라미터 수집
+        keyword = request.args.get('keyword')
+        author = request.args.get('author')
+        recipe_way = request.args.get('recipe_way')
+        recipe_type = request.args.get('recipe_type')
+        
+        # 세부 검색 파라미터
+        calories_min = request.args.get('calories_min', type=int)
+        calories_max = request.args.get('calories_max', type=int)
+        carbohydrate_min = request.args.get('carbohydrate_min', type=int)
+        carbohydrate_max = request.args.get('carbohydrate_max', type=int)
+        protein_min = request.args.get('protein_min', type=int)
+        protein_max = request.args.get('protein_max', type=int)
+        fat_min = request.args.get('fat_min', type=int)
+        fat_max = request.args.get('fat_max', type=int)
+        natrium_min = request.args.get('natrium_min', type=int)
+        natrium_max = request.args.get('natrium_max', type=int)
+        
+        # 재료 필터
+        include_ingredient = request.args.get('include_ingredient')
+        exclude_ingredient = request.args.get('exclude_ingredient')
+        
+        # 레시피 검색 실행
+        recipes = db.search_recipes(
+            keyword=keyword,
+            author=author,
+            recipe_way=recipe_way,
+            recipe_type=recipe_type,
+            calories_min=calories_min,
+            calories_max=calories_max,
+            carbohydrate_min=carbohydrate_min,
+            carbohydrate_max=carbohydrate_max,
+            protein_min=protein_min,
+            protein_max=protein_max,
+            fat_min=fat_min,
+            fat_max=fat_max,
+            natrium_min=natrium_min,
+            natrium_max=natrium_max,
+            include_ingredient=include_ingredient,
+            exclude_ingredient=exclude_ingredient
+        )
+        
+        # 검색 조건이 있으면 타이틀 변경
+        if any([keyword, author, recipe_way, recipe_type, calories_min, calories_max, 
+                carbohydrate_min, carbohydrate_max, protein_min, protein_max, 
+                fat_min, fat_max, natrium_min, natrium_max, include_ingredient, exclude_ingredient]):
+            title = "검색 결과"
+        
+    return render_template('search.html', recipes=recipes, title=title)
+
 if __name__ == '__main__':
     app.run(debug=True)
     
