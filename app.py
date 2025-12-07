@@ -296,6 +296,35 @@ def recipe_detail(recipe_id):
     return render_template('recipe_detail.html', detail=detail)
 
 
+# 댓글 작성
+@app.route('/recipe/<int:recipe_id>/comment', methods=['POST'])
+def add_comment(recipe_id):
+    if 'user_id' not in session:
+        flash('로그인이 필요합니다.', 'error')
+        return redirect(url_for('login'))
+    
+    content = request.form.get('content')
+    if content:
+        success = db.add_comment(session['user_id'], recipe_id, content)
+        if success:
+            flash('댓글이 등록되었습니다.', 'success')
+        else:
+            flash('댓글 등록에 실패했습니다.', 'error')
+    
+    return redirect(url_for('recipe_detail', recipe_id=recipe_id))
+
+# 댓글 삭제 라우트
+@app.route('/recipe/<int:recipe_id>/comment/delete/<int:comment_id>')
+def delete_comment(recipe_id, comment_id):
+    if 'user_id' not in session: return redirect(url_for('login'))
+    
+    if db.delete_comment(comment_id, session['user_id']):
+        flash('댓글이 삭제되었습니다.', 'success')
+    else:
+        flash('삭제 권한이 없거나 실패했습니다.', 'error')
+        
+    return redirect(url_for('recipe_detail', recipe_id=recipe_id))
+
 if __name__ == '__main__':
     app.run(debug=True)
     
