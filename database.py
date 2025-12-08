@@ -627,3 +627,47 @@ def get_top5_comments():
     finally:
         cursor.close()
         conn.close()
+
+
+# 냉장고 파먹기
+def find_recipes_by_fridge(user_id):
+    conn = get_db_conn()
+    if not conn: return []
+    
+    cursor = conn.cursor()
+    try:
+        sql = """
+            SELECT T1.recipe_id, T1.title, T1.nickname, T1.way_name, T1.type_name, 
+                   T1.info_calories
+            FROM ( 
+                SELECT R.recipe_id, R.title, U.nickname, RW.way_name, RT.type_name, 
+                       R.info_calories, COUNT(RI.ingredient_id) AS total_needed 
+                FROM RECIPE R 
+                JOIN USER_T U ON R.author_id = U.user_id 
+                JOIN RECIPE_WAY RW ON R.recipe_way_id = RW.recipe_way_id 
+                JOIN RECIPE_TYPE RT ON R.recipe_type_id = RT.recipe_type_id 
+                JOIN RECIPE_INGREDIENT RI ON R.recipe_id = RI.recipe_id 
+                GROUP BY R.recipe_id, R.title, U.nickname, RW.way_name, RT.type_name, 
+                         R.info_calories
+            ) T1 
+            JOIN ( 
+                SELECT RI.recipe_id, COUNT(UI.ingredient_id) AS total_covered 
+                FROM RECIPE_INGREDIENT RI 
+                JOIN USER_INGREDIENT UI ON RI.ingredient_id = UI.ingredient_id 
+                WHERE UI.user_id = :1 
+                GROUP BY RI.recipe_id 
+            ) T2 ON T1.recipe_id = T2.recipe_id 
+            WHERE T1.total_needed = T2.total_covered
+        """
+        cursor.execute(sql, (user_id,))
+        
+        if cursor.description:
+            columns = [col[0].lower() for col in cursor.description]
+            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+        return []
+    except oracledb.Error as e:
+        print(f"냉장고 파먹기 오류: {e}")
+        return []
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
