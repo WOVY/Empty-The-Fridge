@@ -671,3 +671,49 @@ def find_recipes_by_fridge(user_id):
     finally:
         if cursor: cursor.close()
         if conn: conn.close()
+
+# 댓글 작성
+def add_comment(user_id, recipe_id, content):
+    conn = get_db_conn()
+    if not conn: return False
+    
+    cursor = conn.cursor()
+    try:
+        sql = """
+            INSERT INTO COMMENT_T (comment_id, user_id, recipe_id, content) 
+            VALUES (
+                (SELECT NVL(MAX(comment_id), 0) + 1 FROM COMMENT_T), 
+                :1, :2, :3
+            )
+        """
+        cursor.execute(sql, (user_id, recipe_id, content))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"댓글 등록 실패: {e}")
+        conn.rollback()
+        return False
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
+
+
+# 댓글 삭제
+def delete_comment(comment_id, user_id):
+    conn = get_db_conn()
+    if not conn: return False
+    
+    cursor = conn.cursor()
+    try:
+        # 본인 댓글인지 확인(user_id 조건) 후 삭제
+        sql = "DELETE FROM COMMENT_T WHERE comment_id = :1 AND user_id = :2"
+        cursor.execute(sql, (comment_id, user_id))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"댓글 삭제 실패: {e}")
+        conn.rollback()
+        return False
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
